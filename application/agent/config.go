@@ -3,41 +3,34 @@ package agent
 import (
 	"context"
 	"flag"
-	"fmt"
 	"log/slog"
 	"os"
 
 	"github.com/gbh007/hgraber-next-agent-example/config"
 
-	"github.com/kelseyhightower/envconfig"
 	"go.opentelemetry.io/otel/trace"
-	"gopkg.in/yaml.v3"
 )
 
-func parseConfig[T any]() (config.Config[T], error) {
+func parseConfig[T any]() (config.Config[T], bool, error) {
 	configPath := flag.String("config", "config.yaml", "path to config")
+	generateConfig := flag.String("generate-config", "", "generate example config")
+	scan := flag.Bool("scan", false, "scan zip file to register in db")
 	flag.Parse()
 
-	c := config.DefaultConfig[T](func() *T { return nil }) // TODO: вынести установку этой функции в обвязку
+	defaultParsers := func() *T { return nil } // TODO: вынести установку этой функции в обвязку
 
-	f, err := os.Open(*configPath)
-	if err != nil {
-		return config.Config[T]{}, fmt.Errorf("open config file: %w", err)
+	if *generateConfig != "" {
+		err := config.ExportToFile(config.DefaultConfig(defaultParsers), *generateConfig)
+		if err != nil {
+			panic(err)
+		}
+
+		os.Exit(0)
 	}
 
-	defer f.Close()
+	c, err := config.ImportConfig(*configPath, defaultParsers, true)
 
-	err = yaml.NewDecoder(f).Decode(&c)
-	if err != nil {
-		return config.Config[T]{}, fmt.Errorf("decode yaml: %w", err)
-	}
-
-	err = envconfig.Process("APP", &c)
-	if err != nil {
-		return config.Config[T]{}, fmt.Errorf("decode env: %w", err)
-	}
-
-	return c, nil
+	return c, *scan, err
 }
 
 func initLogger[T any](cfg config.Config[T]) *slog.Logger {

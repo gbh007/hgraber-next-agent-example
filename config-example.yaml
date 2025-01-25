@@ -2,12 +2,23 @@ api:
   addr: 127.0.0.1:8080
   token: agent-token
 application:
-  export_path: .hidden/exported
   debug: true
   trace_endpoint: ""
-  client_timeout: 1m
+  client_timeout: 1m0s
+  service_name: hgraber-next-agent-local
+  use_unsafe_closer: false
 parsers:
   hg4_token: ""
   enabled:
     - mock
     - hgraber_local
+fs_base:
+  export_path: .hidden/exported
+  file_path: .hidden/filedata
+  enable_deduplication: true
+  export_limit_on_folder: 50
+sqlite:
+  file_path: db.sqlite
+zip_scanner:
+  master_addr: http://localhost:8080
+  master_token: local-next

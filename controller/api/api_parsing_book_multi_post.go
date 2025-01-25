@@ -3,19 +3,19 @@ package api
 import (
 	"context"
 
-	"github.com/gbh007/hgraber-next-agent-example/controller/api/internal/server"
+	"github.com/gbh007/hgraber-next-agent-example/open_api/agentAPI"
 )
 
-func (c *Controller) APIParsingBookMultiPost(ctx context.Context, req *server.APIParsingBookMultiPostReq) (server.APIParsingBookMultiPostRes, error) {
+func (c *Controller) APIParsingBookMultiPost(ctx context.Context, req *agentAPI.APIParsingBookMultiPostReq) (agentAPI.APIParsingBookMultiPostRes, error) {
 	result, err := c.parsingUseCases.MultiHandle(ctx, req.URL)
 	if err != nil {
-		return &server.APIParsingBookMultiPostInternalServerError{
+		return &agentAPI.APIParsingBookMultiPostInternalServerError{
 			InnerCode: ParseUseCaseCode,
-			Details:   server.NewOptString(err.Error()),
+			Details:   agentAPI.NewOptString(err.Error()),
 		}, nil
 	}
 
-	return &server.BooksCheckResult{
+	return &agentAPI.BooksCheckResult{
 		Result: convertBooksCheckResultResult(result),
 	}, nil
 }

@@ -9,18 +9,23 @@ import (
 	"github.com/gbh007/hgraber-next-agent-example/config"
 	"github.com/gbh007/hgraber-next-agent-example/controller/api"
 	"github.com/gbh007/hgraber-next-agent-example/controller/async"
-	"github.com/gbh007/hgraber-next-agent-example/dataprovider/files"
+	"github.com/gbh007/hgraber-next-agent-example/dataprovider/dataFS"
+	"github.com/gbh007/hgraber-next-agent-example/dataprovider/exportFS"
 	"github.com/gbh007/hgraber-next-agent-example/dataprovider/loader"
+	"github.com/gbh007/hgraber-next-agent-example/dataprovider/masterAPI"
+	"github.com/gbh007/hgraber-next-agent-example/dataprovider/storage"
 	"github.com/gbh007/hgraber-next-agent-example/domain/hgraber"
 	"github.com/gbh007/hgraber-next-agent-example/pkg"
 	agentUC "github.com/gbh007/hgraber-next-agent-example/usecase/agent"
-	"github.com/gbh007/hgraber-next-agent-example/usecase/exporter"
+	"github.com/gbh007/hgraber-next-agent-example/usecase/exportAPI"
+	"github.com/gbh007/hgraber-next-agent-example/usecase/exportDeduplicator"
+	"go.opentelemetry.io/otel"
 )
 
 type ParserInit[T any] func(ctx context.Context, logger *slog.Logger, cfg config.Config[T]) ([]hgraber.Parser, error)
 
 func Serve[T any](ctx context.Context, parserInit ParserInit[T]) {
-	cfg, err := parseConfig[T]()
+	cfg, needScan, err := parseConfig[T]()
 	if err != nil {
 		// Поскольку на этот момент нет ни логгера ни вообще ничего то выкидываем панику.
 		panic(err)
@@ -30,7 +35,11 @@ func Serve[T any](ctx context.Context, parserInit ParserInit[T]) {
 	logger.InfoContext(ctx, "initializing system")
 
 	if cfg.Application.TraceEndpoint != "" {
-		err := initTrace(ctx, cfg.Application.TraceEndpoint)
+		err := initTrace(
+			ctx,
+			cfg.Application.TraceEndpoint,
+			cfg.Application.ServiceName,
+		)
 		if err != nil {
 			logger.ErrorContext(
 				ctx, "fail init otel",
@@ -43,9 +52,12 @@ func Serve[T any](ctx context.Context, parserInit ParserInit[T]) {
 
 	parsers, err := parserInit(ctx, logger, cfg)
 	if err != nil {
-		logger.ErrorContext(ctx, err.Error())
+		logger.ErrorContext(
+			ctx, "fail init parsers",
+			slog.Any("error", err),
+		)
 
-		return
+		os.Exit(1)
 	}
 
 	async := async.New(logger)
@@ -57,17 +69,101 @@ func Serve[T any](ctx context.Context, parserInit ParserInit[T]) {
 
 	agentUseCases := agentUC.New(logger, loader)
 
-	var exportUseCases api.ExportUseCases
+	tracer := otel.GetTracerProvider().Tracer("hgraber-next-agent")
 
-	if cfg.Application.ExportPath != "" {
-		fileStorage, err := files.New(cfg.Application.ExportPath, logger)
+	var (
+		exportStorage api.ExportUseCase
+		fileStorage   api.FileUseCase
+
+		exportStorageRaw *exportFS.Storage
+		dbRaw            *storage.Storage
+		mAPI             *masterAPI.Client
+	)
+
+	if cfg.FSBase.ExportPath != "" {
+		exportStorageRaw, err = exportFS.New(cfg.FSBase.ExportPath, logger, cfg.FSBase.ExportLimitOnFolder, cfg.Application.UseUnsafeCloser)
 		if err != nil {
-			logger.ErrorContext(ctx, err.Error())
+			logger.ErrorContext(
+				ctx, "fail init export fs",
+				slog.Any("error", err),
+			)
 
-			return
+			os.Exit(1)
 		}
 
-		exportUseCases = exporter.New(logger, fileStorage)
+		exportStorage = exportStorageRaw
+
+		logger.DebugContext(
+			ctx, "use local export storage",
+			slog.String("path", cfg.FSBase.ExportPath),
+		)
+	}
+
+	if cfg.FSBase.FilePath != "" {
+		fileStorage, err = dataFS.New(cfg.FSBase.FilePath, logger)
+		if err != nil {
+			logger.ErrorContext(
+				ctx, "fail init data fs",
+				slog.Any("error", err),
+			)
+
+			os.Exit(1)
+		}
+
+		logger.DebugContext(
+			ctx, "use local file storage",
+			slog.String("path", cfg.FSBase.FilePath),
+		)
+	}
+
+	if cfg.Sqlite.FilePath != "" {
+		dbRaw, err = storage.New(ctx, logger, cfg.Sqlite.FilePath)
+		if err != nil {
+			logger.ErrorContext(
+				ctx, "fail init db",
+				slog.Any("error", err),
+			)
+
+			os.Exit(1)
+		}
+	}
+
+	if cfg.ZipScanner.MasterAddr != "" {
+		mAPI, err = masterAPI.New(cfg.ZipScanner.MasterAddr, cfg.ZipScanner.MasterToken)
+		if err != nil {
+			logger.ErrorContext(
+				ctx, "fail init master api",
+				slog.Any("error", err),
+			)
+
+			os.Exit(1)
+		}
+	}
+
+	if needScan {
+		if dbRaw == nil || exportStorageRaw == nil || mAPI == nil {
+			logger.ErrorContext(ctx, "invalid scan dependencies")
+
+			os.Exit(1)
+		}
+
+		err = exportDeduplicator.New(logger, exportStorageRaw, dbRaw, mAPI).ScanZips(ctx)
+		if err != nil {
+			logger.ErrorContext(
+				ctx, "fail scan zips",
+				slog.Any("error", err),
+			)
+
+			os.Exit(1)
+		}
+
+		return
+	}
+
+	if cfg.FSBase.EnableDeduplication && dbRaw != nil && exportStorageRaw != nil {
+		exportStorage = exportAPI.New(logger, dbRaw, exportStorageRaw)
+
+		logger.DebugContext(ctx, "use export deduplication")
 	}
 
 	parserNames := pkg.Map(parsers, func(parser hgraber.Parser) string {
@@ -77,29 +173,36 @@ func Serve[T any](ctx context.Context, parserInit ParserInit[T]) {
 	apiController, err := api.New(
 		time.Now(),
 		logger,
+		tracer,
 		agentUseCases,
-		exportUseCases,
+		exportStorage,
+		fileStorage,
 		cfg.API.Addr,
 		cfg.Application.Debug,
 		cfg.API.Token,
 		parserNames,
 	)
 	if err != nil {
-		logger.ErrorContext(ctx, err.Error())
+		logger.ErrorContext(
+			ctx, "fail init api controller",
+			slog.Any("error", err),
+		)
 
-		return
+		os.Exit(1)
 	}
 
 	async.RegisterRunner(ctx, apiController)
 
-	logger.InfoContext(ctx, "service start")
+	logger.InfoContext(ctx, "application start")
+	defer logger.InfoContext(ctx, "application stop")
 
 	err = async.Serve(ctx)
 	if err != nil {
-		logger.ErrorContext(ctx, err.Error())
+		logger.ErrorContext(
+			ctx, "fail serve",
+			slog.Any("error", err),
+		)
 
-		return
+		os.Exit(1)
 	}
-
-	logger.InfoContext(ctx, "service stop")
 }

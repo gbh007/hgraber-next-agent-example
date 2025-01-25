@@ -6,6 +6,9 @@ type Config[T any] struct {
 	API         API         `envconfig:"API" yaml:"api"`
 	Application Application `envconfig:"APPLICATION" yaml:"application"`
 	Parsers     *T          `envconfig:"PARSERS" yaml:"parsers"`
+	FSBase      FSBase      `envconfig:"FS_BASE" yaml:"fs_base"`
+	Sqlite      Sqlite      `envconfig:"SQLITE" yaml:"sqlite"`
+	ZipScanner  ZipScanner  `envconfig:"ZIP_SCANNER" yaml:"zip_scanner"`
 }
 
 func DefaultConfig[T any](defaultParsers func() *T) Config[T] {
@@ -13,22 +16,25 @@ func DefaultConfig[T any](defaultParsers func() *T) Config[T] {
 		API:         DefaultAPI(),
 		Parsers:     defaultParsers(),
 		Application: DefaultApplication(),
+		FSBase:      DefaultFSBase(),
+		Sqlite:      DefaultSqlite(),
 	}
 }
 
 type Application struct {
-	ExportPath    string        `envconfig:"EXPORT_PATH" yaml:"export_path"`
-	Debug         bool          `envconfig:"DEBUG" yaml:"debug"`
-	TraceEndpoint string        `envconfig:"TRACE_ENDPOINT" yaml:"trace_endpoint"`
-	ClientTimeout time.Duration `envconfig:"CLIENT_TIMEOUT" yaml:"client_timeout"`
+	Debug           bool          `envconfig:"DEBUG" yaml:"debug"`
+	TraceEndpoint   string        `envconfig:"TRACE_ENDPOINT" yaml:"trace_endpoint"`
+	ClientTimeout   time.Duration `envconfig:"CLIENT_TIMEOUT" yaml:"client_timeout"`
+	ServiceName     string        `envconfig:"SERVICE_NAME" yaml:"service_name"`
+	UseUnsafeCloser bool          `envconfig:"USE_UNSAFE_CLOSER" yaml:"use_unsafe_closer"`
 }
 
 func DefaultApplication() Application {
 	return Application{
-		ExportPath:    "",
 		Debug:         false,
 		TraceEndpoint: "",
 		ClientTimeout: time.Minute,
+		ServiceName:   "hgraber-next-agent",
 	}
 }
 
@@ -57,4 +63,32 @@ func DefaultParsers() *Parsers {
 			"hgraber_local",
 		},
 	}
+}
+
+type FSBase struct {
+	ExportPath          string `envconfig:"EXPORT_PATH" yaml:"export_path"`
+	FilePath            string `envconfig:"FILE_PATH" yaml:"file_path"`
+	EnableDeduplication bool   `envconfig:"ENABLE_DEDUPLICATION" yaml:"enable_deduplication"`
+	ExportLimitOnFolder int    `envconfig:"EXPORT_LIMIT_ON_FOLDER" yaml:"export_limit_on_folder"`
+}
+
+func DefaultFSBase() FSBase {
+	return FSBase{}
+}
+
+type Sqlite struct {
+	FilePath string `envconfig:"FILE_PATH" yaml:"file_path"`
+}
+
+func DefaultSqlite() Sqlite {
+	return Sqlite{}
+}
+
+type ZipScanner struct {
+	MasterAddr  string `envconfig:"MASTER_ADDR" yaml:"master_addr"`
+	MasterToken string `envconfig:"MASTER_TOKEN" yaml:"master_token"`
+}
+
+func DefaultZipScanner() ZipScanner {
+	return ZipScanner{}
 }

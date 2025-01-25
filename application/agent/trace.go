@@ -12,7 +12,7 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.20.0"
 )
 
-func initTrace(ctx context.Context, tracerEndpoint string) error {
+func initTrace(ctx context.Context, tracerEndpoint, serviceName string) error {
 	exp, err := otlptracehttp.New(
 		ctx,
 		otlptracehttp.WithEndpointURL(tracerEndpoint),
@@ -22,7 +22,7 @@ func initTrace(ctx context.Context, tracerEndpoint string) error {
 	}
 
 	r, err := resource.Merge(resource.Default(), resource.NewSchemaless(
-		semconv.ServiceName("hgraber-next-agent"),
+		semconv.ServiceName(serviceName),
 	))
 	if err != nil {
 		return fmt.Errorf("merge resource: %w", err)

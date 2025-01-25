@@ -8,8 +8,9 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/gbh007/hgraber-next-agent-example/controller/api/internal/server"
 	"github.com/gbh007/hgraber-next-agent-example/entities"
+	"github.com/gbh007/hgraber-next-agent-example/open_api/agentAPI"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/google/uuid"
 )
@@ -22,20 +23,29 @@ type parsingUseCases interface {
 	MultiHandle(ctx context.Context, multiUrl url.URL) ([]entities.AgentBookCheckResult, error)
 }
 
-type ExportUseCases interface {
-	ExportBook(ctx context.Context, bookID uuid.UUID, bookName string, body io.Reader) error
+type ExportUseCase interface {
+	Create(ctx context.Context, data entities.ExportData) error
+}
+
+type FileUseCase interface {
+	Create(ctx context.Context, fileID uuid.UUID, body io.Reader) error
+	Delete(ctx context.Context, fileID uuid.UUID) error
+	Get(ctx context.Context, fileID uuid.UUID) (io.Reader, error)
+	IDs(ctx context.Context) ([]uuid.UUID, error)
 }
 
 type Controller struct {
 	startAt time.Time
 	logger  *slog.Logger
+	tracer  trace.Tracer
 	addr    string
 	debug   bool
 
-	ogenServer *server.Server
+	ogenServer *agentAPI.Server
 
+	exportUseCase   ExportUseCase
+	fileUseCase     FileUseCase
 	parsingUseCases parsingUseCases
-	exportUseCases  ExportUseCases
 
 	token       string
 	parserCodes []string
@@ -44,8 +54,10 @@ type Controller struct {
 func New(
 	startAt time.Time,
 	logger *slog.Logger,
+	tracer trace.Tracer,
 	parsingUseCases parsingUseCases,
-	exportUseCases ExportUseCases,
+	exportUseCase ExportUseCase,
+	fileUseCase FileUseCase,
 	addr string,
 	debug bool,
 	token string,
@@ -54,6 +66,7 @@ func New(
 	c := &Controller{
 		startAt: startAt,
 		logger:  logger,
+		tracer:  tracer,
 		addr:    addr,
 		debug:   debug,
 		token:   token,
@@ -61,10 +74,11 @@ func New(
 		parserCodes: parserCodes,
 
 		parsingUseCases: parsingUseCases,
-		exportUseCases:  exportUseCases,
+		exportUseCase:   exportUseCase,
+		fileUseCase:     fileUseCase,
 	}
 
-	ogenServer, err := server.NewServer(c, c)
+	ogenServer, err := agentAPI.NewServer(c, c)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +90,7 @@ func New(
 
 var errorAccessForbidden = errors.New("access forbidden")
 
-func (c *Controller) HandleHeaderAuth(ctx context.Context, operationName string, t server.HeaderAuth) (context.Context, error) {
+func (c *Controller) HandleHeaderAuth(ctx context.Context, operationName string, t agentAPI.HeaderAuth) (context.Context, error) {
 	if c.token == "" {
 		return ctx, nil
 	}

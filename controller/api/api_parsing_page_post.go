@@ -3,19 +3,19 @@ package api
 import (
 	"context"
 
-	"github.com/gbh007/hgraber-next-agent-example/controller/api/internal/server"
+	"github.com/gbh007/hgraber-next-agent-example/open_api/agentAPI"
 )
 
-func (c *Controller) APIParsingPagePost(ctx context.Context, req *server.APIParsingPagePostReq) (server.APIParsingPagePostRes, error) {
+func (c *Controller) APIParsingPagePost(ctx context.Context, req *agentAPI.APIParsingPagePostReq) (agentAPI.APIParsingPagePostRes, error) {
 	body, err := c.parsingUseCases.DownloadPage(ctx, req.BookURL, req.ImageURL)
 	if err != nil {
-		return &server.APIParsingPagePostInternalServerError{
+		return &agentAPI.APIParsingPagePostInternalServerError{
 			InnerCode: ParseUseCaseCode,
-			Details:   server.NewOptString(err.Error()),
+			Details:   agentAPI.NewOptString(err.Error()),
 		}, nil
 	}
 
-	return &server.APIParsingPagePostOK{
+	return &agentAPI.APIParsingPagePostOK{
 		Data: body,
 	}, nil
 }

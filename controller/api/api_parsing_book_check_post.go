@@ -3,54 +3,53 @@ package api
 import (
 	"context"
 
-	"github.com/gbh007/hgraber-next-agent-example/pkg"
-
-	"github.com/gbh007/hgraber-next-agent-example/controller/api/internal/server"
 	"github.com/gbh007/hgraber-next-agent-example/entities"
+	"github.com/gbh007/hgraber-next-agent-example/open_api/agentAPI"
+	"github.com/gbh007/hgraber-next-agent-example/pkg"
 )
 
-func (c *Controller) APIParsingBookCheckPost(ctx context.Context, req *server.APIParsingBookCheckPostReq) (server.APIParsingBookCheckPostRes, error) {
+func (c *Controller) APIParsingBookCheckPost(ctx context.Context, req *agentAPI.APIParsingBookCheckPostReq) (agentAPI.APIParsingBookCheckPostRes, error) {
 	result, err := c.parsingUseCases.CheckBooks(ctx, req.Urls)
 	if err != nil {
-		return &server.APIParsingBookCheckPostInternalServerError{
+		return &agentAPI.APIParsingBookCheckPostInternalServerError{
 			InnerCode: ParseUseCaseCode,
-			Details:   server.NewOptString(err.Error()),
+			Details:   agentAPI.NewOptString(err.Error()),
 		}, nil
 	}
 
-	return &server.BooksCheckResult{
+	return &agentAPI.BooksCheckResult{
 		Result: convertBooksCheckResultResult(result),
 	}, nil
 }
 
-func convertBooksCheckResultResult(result []entities.AgentBookCheckResult) []server.BooksCheckResultResultItem {
-	return pkg.Map(result, func(v entities.AgentBookCheckResult) server.BooksCheckResultResultItem {
+func convertBooksCheckResultResult(result []entities.AgentBookCheckResult) []agentAPI.BooksCheckResultResultItem {
+	return pkg.Map(result, func(v entities.AgentBookCheckResult) agentAPI.BooksCheckResultResultItem {
 		switch {
 		case v.IsPossible:
-			return server.BooksCheckResultResultItem{
+			return agentAPI.BooksCheckResultResultItem{
 				URL:                v.URL,
-				Result:             server.BooksCheckResultResultItemResultOk,
+				Result:             agentAPI.BooksCheckResultResultItemResultOk,
 				PossibleDuplicates: v.PossibleDuplicates,
 			}
 
 		case v.IsUnsupported:
-			return server.BooksCheckResultResultItem{
+			return agentAPI.BooksCheckResultResultItem{
 				URL:    v.URL,
-				Result: server.BooksCheckResultResultItemResultUnsupported,
+				Result: agentAPI.BooksCheckResultResultItemResultUnsupported,
 			}
 
 		case v.HasError:
-			return server.BooksCheckResultResultItem{
+			return agentAPI.BooksCheckResultResultItem{
 				URL:          v.URL,
-				Result:       server.BooksCheckResultResultItemResultError,
-				ErrorDetails: server.NewOptString(v.ErrorReason),
+				Result:       agentAPI.BooksCheckResultResultItemResultError,
+				ErrorDetails: agentAPI.NewOptString(v.ErrorReason),
 			}
 
 		default:
-			return server.BooksCheckResultResultItem{
+			return agentAPI.BooksCheckResultResultItem{
 				URL:          v.URL,
-				Result:       server.BooksCheckResultResultItemResultError,
-				ErrorDetails: server.NewOptString("unknown result state"),
+				Result:       agentAPI.BooksCheckResultResultItemResultError,
+				ErrorDetails: agentAPI.NewOptString("unknown result state"),
 			}
 		}
 	})

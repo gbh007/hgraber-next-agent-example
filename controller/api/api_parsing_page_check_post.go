@@ -3,43 +3,42 @@ package api
 import (
 	"context"
 
-	"github.com/gbh007/hgraber-next-agent-example/pkg"
-
-	"github.com/gbh007/hgraber-next-agent-example/controller/api/internal/server"
 	"github.com/gbh007/hgraber-next-agent-example/entities"
+	"github.com/gbh007/hgraber-next-agent-example/open_api/agentAPI"
+	"github.com/gbh007/hgraber-next-agent-example/pkg"
 )
 
-func (c *Controller) APIParsingPageCheckPost(ctx context.Context, req *server.APIParsingPageCheckPostReq) (server.APIParsingPageCheckPostRes, error) {
-	result, err := c.parsingUseCases.CheckPages(ctx, pkg.Map(req.Urls, func(u server.APIParsingPageCheckPostReqUrlsItem) entities.AgentPageURL {
+func (c *Controller) APIParsingPageCheckPost(ctx context.Context, req *agentAPI.APIParsingPageCheckPostReq) (agentAPI.APIParsingPageCheckPostRes, error) {
+	result, err := c.parsingUseCases.CheckPages(ctx, pkg.Map(req.Urls, func(u agentAPI.APIParsingPageCheckPostReqUrlsItem) entities.AgentPageURL {
 		return entities.AgentPageURL{
 			BookURL:  u.BookURL,
 			ImageURL: u.ImageURL,
 		}
 	}))
 	if err != nil {
-		return &server.APIParsingPageCheckPostInternalServerError{
+		return &agentAPI.APIParsingPageCheckPostInternalServerError{
 			InnerCode: ParseUseCaseCode,
-			Details:   server.NewOptString(err.Error()),
+			Details:   agentAPI.NewOptString(err.Error()),
 		}, nil
 	}
 
-	return &server.APIParsingPageCheckPostOK{
-		Result: pkg.Map(result, func(p entities.AgentPageCheckResult) server.APIParsingPageCheckPostOKResultItem {
-			item := server.APIParsingPageCheckPostOKResultItem{
+	return &agentAPI.APIParsingPageCheckPostOK{
+		Result: pkg.Map(result, func(p entities.AgentPageCheckResult) agentAPI.APIParsingPageCheckPostOKResultItem {
+			item := agentAPI.APIParsingPageCheckPostOKResultItem{
 				BookURL:  p.BookURL,
 				ImageURL: p.ImageURL,
 			}
 
 			switch {
 			case p.HasError:
-				item.Result = server.APIParsingPageCheckPostOKResultItemResultError
-				item.ErrorDetails = server.NewOptString(p.ErrorReason)
+				item.Result = agentAPI.APIParsingPageCheckPostOKResultItemResultError
+				item.ErrorDetails = agentAPI.NewOptString(p.ErrorReason)
 
 			case p.IsPossible:
-				item.Result = server.APIParsingPageCheckPostOKResultItemResultOk
+				item.Result = agentAPI.APIParsingPageCheckPostOKResultItemResultOk
 
 			case p.IsUnsupported:
-				item.Result = server.APIParsingPageCheckPostOKResultItemResultUnsupported
+				item.Result = agentAPI.APIParsingPageCheckPostOKResultItemResultUnsupported
 			}
 
 			return item
