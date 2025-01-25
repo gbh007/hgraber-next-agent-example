@@ -1,8 +1,7 @@
 package main
 
 import (
-	"app/internal/dataprovider/loader"
-	"app/internal/domain/hgraber"
+	"archive/zip"
 	"context"
 	"flag"
 	"fmt"
@@ -10,7 +9,15 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
+	"time"
+
+	"github.com/gbh007/hgraber-next-agent-example/config"
+	"github.com/gbh007/hgraber-next-agent-example/dataprovider/loader"
+	"github.com/gbh007/hgraber-next-agent-example/domain/hgraber"
+	"github.com/gbh007/hgraber-next-agent-example/external"
+	"github.com/gbh007/hgraber-next-agent-example/pkg"
 )
 
 func main() {
@@ -27,6 +34,8 @@ func main() {
 	listBooks := flag.String("l", "", "books handle list")
 	hgToken := flag.String("hg", "", "hgraber v4 token")
 	withPages := flag.Bool("pages", false, "download pages")
+	asZip := flag.Bool("zip", false, "download book as zip")
+	printCfg := flag.String("print-config", "", "generate example config")
 	flag.Parse()
 
 	l := slog.New(slog.NewJSONHandler(
@@ -36,10 +45,41 @@ func main() {
 			Level:     slog.LevelDebug,
 		},
 	))
-	loader := loader.New(l, *hgToken)
+
+	if *printCfg != "" {
+		err := config.ExportToFile(config.DefaultConfig[config.Parsers](config.DefaultParsers), *printCfg)
+		if err != nil {
+			l.ErrorContext(ctx, err.Error())
+
+			return
+		}
+
+		return
+	}
+
+	loader := loader.New(
+		l,
+		time.Minute,
+		loader.NewDefaultParsers(
+			l,
+			*hgToken,
+			time.Minute,
+			[]string{
+				"mock",
+				"hgraber_local",
+			},
+		),
+	)
+
+	var err error
 
 	if *url != "" {
-		err := handleBook(ctx, l, loader, *url, *withPages)
+		if *asZip {
+			err = handleBookToZip(ctx, loader, *url)
+		} else {
+			err = handleBook(ctx, l, loader, *url, *withPages)
+		}
+
 		if err != nil {
 			l.ErrorContext(ctx, err.Error())
 
@@ -128,6 +168,152 @@ func loadPage(ctx context.Context, loader *loader.Loader, p hgraber.Page, bookUr
 	_, err = io.Copy(f, r)
 	if err != nil {
 		return fmt.Errorf("page write %d %s:%w", p.PageNumber, p.URL, err)
+	}
+
+	return nil
+}
+
+func handleBookToZip(ctx context.Context, loader *loader.Loader, bookUrl string) error {
+	parser, err := loader.Load(ctx, bookUrl)
+	if err != nil {
+		return err
+	}
+
+	pages, err := parser.Pages(ctx)
+	if err != nil {
+		return err
+	}
+
+	name, err := parser.Name(ctx)
+	if err != nil {
+		return err
+	}
+
+	tags, err := parser.Tags(ctx)
+	if err != nil {
+		return err
+	}
+
+	authors, err := parser.Authors(ctx)
+	if err != nil {
+		return err
+	}
+
+	characters, err := parser.Characters(ctx)
+	if err != nil {
+		return err
+	}
+
+	languages, err := parser.Languages(ctx)
+	if err != nil {
+		return err
+	}
+
+	categories, err := parser.Categories(ctx)
+	if err != nil {
+		return err
+	}
+
+	parodies, err := parser.Parodies(ctx)
+	if err != nil {
+		return err
+	}
+
+	groups, err := parser.Groups(ctx)
+	if err != nil {
+		return err
+	}
+
+	f, err := os.Create("dump.zip")
+	if err != nil {
+		return err
+	}
+
+	defer f.Close()
+
+	pageUrls := pkg.SliceToMap(pages, func(p hgraber.Page) (int, string) {
+		return p.PageNumber, p.URL
+	})
+
+	zipWriter := zip.NewWriter(f)
+
+	err = external.WriteArchive(
+		ctx, zipWriter,
+		func(ctx context.Context, pageNumber int) (io.Reader, error) {
+			u, ok := pageUrls[pageNumber]
+			if !ok {
+				return nil, fmt.Errorf("missing page %d", pageNumber)
+			}
+
+			return loader.LoadImage(ctx, u, bookUrl)
+		},
+		external.Info{
+			Version: "1.0.0",
+			Meta: external.Meta{
+				Exported:    time.Now().UTC(),
+				ServiceName: "hgraber next agent",
+			},
+			Data: external.Book{
+				Name:             name,
+				OriginURL:        bookUrl,
+				PageCount:        len(pages),
+				CreateAt:         time.Now(),
+				AttributesParsed: true,
+				Attributes: []external.Attribute{
+					{
+						Code:   external.AttributeCodeTag,
+						Values: tags,
+					},
+					{
+						Code:   external.AttributeCodeAuthor,
+						Values: authors,
+					},
+					{
+						Code:   external.AttributeCodeCharacter,
+						Values: characters,
+					},
+					{
+						Code:   external.AttributeCodeLanguage,
+						Values: languages,
+					},
+					{
+						Code:   external.AttributeCodeCategory,
+						Values: categories,
+					},
+					{
+						Code:   external.AttributeCodeParody,
+						Values: parodies,
+					},
+					{
+						Code:   external.AttributeCodeGroup,
+						Values: groups,
+					},
+				},
+				Pages: pkg.Map(pages, func(p hgraber.Page) external.Page {
+					ext := p.Ext
+					if !strings.HasPrefix(ext, ".") {
+						ext = "." + ext
+					}
+
+					return external.Page{
+						PageNumber: p.PageNumber,
+						Ext:        ext,
+						OriginURL:  p.URL,
+						CreateAt:   time.Now(),
+						Downloaded: true,
+						LoadAt:     time.Now(),
+					}
+				}),
+			},
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	err = zipWriter.Close()
+	if err != nil {
+		return err
 	}
 
 	return nil
