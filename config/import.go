@@ -26,6 +26,7 @@ func ImportConfig[T any](path string, defaultParsers func() *T, useEnv bool) (Co
 	}
 
 	if useEnv {
+		// Важно: не понятно баг или фича, но nil значения инициализируются даже если нет окружения.
 		err := envconfig.Process("APP", &c)
 		if err != nil {
 			return Config[T]{}, fmt.Errorf("decode env: %w", err)

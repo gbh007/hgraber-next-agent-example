@@ -50,6 +50,20 @@ func Serve[T any](ctx context.Context, parserInit ParserInit[T]) {
 		}
 	}
 
+	tracer := otel.GetTracerProvider().Tracer("hgraber-next-agent")
+
+	async := async.New(logger)
+
+	var (
+		exportStorage api.ExportUseCases
+		fileStorage   api.FileUseCases
+		agentUseCases api.ParsingUseCases
+
+		exportStorageRaw *exportFS.Storage
+		dbRaw            *storage.Storage
+		mAPI             *masterAPI.Client
+	)
+
 	parsers, err := parserInit(ctx, logger, cfg)
 	if err != nil {
 		logger.ErrorContext(
@@ -60,25 +74,19 @@ func Serve[T any](ctx context.Context, parserInit ParserInit[T]) {
 		os.Exit(1)
 	}
 
-	async := async.New(logger)
-	loader := loader.New(
-		logger,
-		cfg.Application.ClientTimeout,
-		parsers,
-	)
+	if len(parsers) > 0 {
+		loader := loader.New(
+			logger,
+			cfg.Application.ClientTimeout,
+			parsers,
+		)
 
-	agentUseCases := agentUC.New(logger, loader)
+		agentUseCases = agentUC.New(logger, loader)
 
-	tracer := otel.GetTracerProvider().Tracer("hgraber-next-agent")
-
-	var (
-		exportStorage api.ExportUseCase
-		fileStorage   api.FileUseCase
-
-		exportStorageRaw *exportFS.Storage
-		dbRaw            *storage.Storage
-		mAPI             *masterAPI.Client
-	)
+		logger.DebugContext(
+			ctx, "use parsing",
+		)
+	}
 
 	if cfg.FSBase.ExportPath != "" {
 		exportStorageRaw, err = exportFS.New(cfg.FSBase.ExportPath, logger, cfg.FSBase.ExportLimitOnFolder, cfg.Application.UseUnsafeCloser)

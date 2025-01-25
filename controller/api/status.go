@@ -16,6 +16,10 @@ func (c *Controller) APICoreStatusGet(ctx context.Context) (agentAPI.APICoreStat
 				Type:    agentAPI.APICoreStatusGetOKProblemsItemTypeInfo,
 				Details: "parsers: " + strings.Join(c.parserCodes, ", "),
 			},
+			{
+				Type:    agentAPI.APICoreStatusGetOKProblemsItemTypeInfo,
+				Details: "modules: " + strings.Join(c.enabledModules, ", "),
+			},
 		},
 	}, nil
 }

@@ -15,7 +15,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type parsingUseCases interface {
+type ParsingUseCases interface {
 	CheckBooks(ctx context.Context, urls []url.URL) ([]entities.AgentBookCheckResult, error)
 	ParseBook(ctx context.Context, u url.URL) (entities.AgentBookDetails, error)
 	DownloadPage(ctx context.Context, bookURL, imageURL url.URL) (io.Reader, error)
@@ -23,11 +23,11 @@ type parsingUseCases interface {
 	MultiHandle(ctx context.Context, multiUrl url.URL) ([]entities.AgentBookCheckResult, error)
 }
 
-type ExportUseCase interface {
+type ExportUseCases interface {
 	Create(ctx context.Context, data entities.ExportData) error
 }
 
-type FileUseCase interface {
+type FileUseCases interface {
 	Create(ctx context.Context, fileID uuid.UUID, body io.Reader) error
 	Delete(ctx context.Context, fileID uuid.UUID) error
 	Get(ctx context.Context, fileID uuid.UUID) (io.Reader, error)
@@ -43,21 +43,22 @@ type Controller struct {
 
 	ogenServer *agentAPI.Server
 
-	exportUseCase   ExportUseCase
-	fileUseCase     FileUseCase
-	parsingUseCases parsingUseCases
+	exportUseCase   ExportUseCases
+	fileUseCase     FileUseCases
+	parsingUseCases ParsingUseCases
 
-	token       string
-	parserCodes []string
+	token          string
+	parserCodes    []string
+	enabledModules []string
 }
 
 func New(
 	startAt time.Time,
 	logger *slog.Logger,
 	tracer trace.Tracer,
-	parsingUseCases parsingUseCases,
-	exportUseCase ExportUseCase,
-	fileUseCase FileUseCase,
+	parsingUseCases ParsingUseCases,
+	exportUseCase ExportUseCases,
+	fileUseCase FileUseCases,
 	addr string,
 	debug bool,
 	token string,
@@ -71,11 +72,24 @@ func New(
 		debug:   debug,
 		token:   token,
 
-		parserCodes: parserCodes,
+		parserCodes:    parserCodes,
+		enabledModules: make([]string, 0, 3),
 
 		parsingUseCases: parsingUseCases,
 		exportUseCase:   exportUseCase,
 		fileUseCase:     fileUseCase,
+	}
+
+	if c.parsingUseCases != nil {
+		c.enabledModules = append(c.enabledModules, "parsing")
+	}
+
+	if c.exportUseCase != nil {
+		c.enabledModules = append(c.enabledModules, "export")
+	}
+
+	if c.fileUseCase != nil {
+		c.enabledModules = append(c.enabledModules, "file system")
 	}
 
 	ogenServer, err := agentAPI.NewServer(c, c)

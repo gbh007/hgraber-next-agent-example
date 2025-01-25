@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"os/signal"
 	"syscall"
@@ -25,7 +24,9 @@ func main() {
 
 	agent.Serve(ctx, func(ctx context.Context, logger *slog.Logger, cfg config.Config[config.Parsers]) ([]hgraber.Parser, error) {
 		if cfg.Parsers == nil {
-			return nil, fmt.Errorf("missing parser config")
+			logger.DebugContext(ctx, "nil parser config, skipping")
+
+			return []hgraber.Parser{}, nil
 		}
 
 		return loader.NewDefaultParsers(

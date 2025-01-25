@@ -9,6 +9,13 @@ import (
 )
 
 func (c *Controller) APIParsingPageCheckPost(ctx context.Context, req *agentAPI.APIParsingPageCheckPostReq) (agentAPI.APIParsingPageCheckPostRes, error) {
+	if c.parsingUseCases == nil {
+		return &agentAPI.APIParsingPageCheckPostBadRequest{
+			InnerCode: ValidationCode,
+			Details:   agentAPI.NewOptString("unsupported api"),
+		}, nil
+	}
+
 	result, err := c.parsingUseCases.CheckPages(ctx, pkg.Map(req.Urls, func(u agentAPI.APIParsingPageCheckPostReqUrlsItem) entities.AgentPageURL {
 		return entities.AgentPageURL{
 			BookURL:  u.BookURL,
