@@ -8,7 +8,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/gbh007/hgraber-next-agent-example/pkg"
+	"github.com/gbh007/hgraber-next-agent-core/pkg"
 )
 
 func (s *Storage) Get(ctx context.Context, relativePath string) (io.Reader, error) {

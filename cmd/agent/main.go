@@ -6,10 +6,10 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/gbh007/hgraber-next-agent-example/application/agent"
-	"github.com/gbh007/hgraber-next-agent-example/config"
-	"github.com/gbh007/hgraber-next-agent-example/dataprovider/loader"
-	"github.com/gbh007/hgraber-next-agent-example/domain/hgraber"
+	"github.com/gbh007/hgraber-next-agent-core/application/agent"
+	"github.com/gbh007/hgraber-next-agent-core/config"
+	"github.com/gbh007/hgraber-next-agent-core/dataprovider/loader"
+	"github.com/gbh007/hgraber-next-agent-core/domain/hgraber"
 )
 
 func main() {

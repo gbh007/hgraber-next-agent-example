@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/gbh007/hgraber-next-agent-example/domain/hgraber"
-	"github.com/gbh007/hgraber-next-agent-example/entities"
+	"github.com/gbh007/hgraber-next-agent-core/domain/hgraber"
+	"github.com/gbh007/hgraber-next-agent-core/entities"
 )
 
 func (uc *UseCase) MultiHandle(ctx context.Context, multiUrl url.URL) ([]entities.AgentBookCheckResult, error) {

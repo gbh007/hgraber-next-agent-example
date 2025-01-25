@@ -1,4 +1,4 @@
-module github.com/gbh007/hgraber-next-agent-example
+module github.com/gbh007/hgraber-next-agent-core
 
 go 1.21.5
 

@@ -13,11 +13,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gbh007/hgraber-next-agent-example/config"
-	"github.com/gbh007/hgraber-next-agent-example/dataprovider/loader"
-	"github.com/gbh007/hgraber-next-agent-example/domain/hgraber"
-	"github.com/gbh007/hgraber-next-agent-example/external"
-	"github.com/gbh007/hgraber-next-agent-example/pkg"
+	"github.com/gbh007/hgraber-next-agent-core/config"
+	"github.com/gbh007/hgraber-next-agent-core/dataprovider/loader"
+	"github.com/gbh007/hgraber-next-agent-core/domain/hgraber"
+	"github.com/gbh007/hgraber-next-agent-core/external"
+	"github.com/gbh007/hgraber-next-agent-core/pkg"
 )
 
 func main() {

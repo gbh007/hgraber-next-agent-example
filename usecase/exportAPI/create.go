@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/gbh007/hgraber-next-agent-example/entities"
+	"github.com/gbh007/hgraber-next-agent-core/entities"
 )
 
 func (uc *UseCase) Create(ctx context.Context, data entities.ExportData) error {

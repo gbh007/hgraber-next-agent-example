@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/gbh007/hgraber-next-agent-example/entities"
-	"github.com/gbh007/hgraber-next-agent-example/open_api/agentAPI"
+	"github.com/gbh007/hgraber-next-agent-core/entities"
+	"github.com/gbh007/hgraber-next-agent-core/open_api/agentAPI"
 )
 
 func (c *Controller) APIFsGetGet(ctx context.Context, params agentAPI.APIFsGetGetParams) (agentAPI.APIFsGetGetRes, error) {

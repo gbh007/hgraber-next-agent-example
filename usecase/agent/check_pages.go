@@ -3,7 +3,7 @@ package agent
 import (
 	"context"
 
-	"github.com/gbh007/hgraber-next-agent-example/entities"
+	"github.com/gbh007/hgraber-next-agent-core/entities"
 )
 
 func (uc *UseCase) CheckPages(ctx context.Context, pages []entities.AgentPageURL) ([]entities.AgentPageCheckResult, error) {

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/gbh007/hgraber-next-agent-example/entities"
+	"github.com/gbh007/hgraber-next-agent-core/entities"
 )
 
 func (uc *UseCase) CheckBooks(ctx context.Context, urls []url.URL) ([]entities.AgentBookCheckResult, error) {

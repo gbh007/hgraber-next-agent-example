@@ -5,7 +5,7 @@ import (
 	"io"
 	"log/slog"
 
-	"github.com/gbh007/hgraber-next-agent-example/domain/hgraber"
+	"github.com/gbh007/hgraber-next-agent-core/domain/hgraber"
 )
 
 type loader interface {

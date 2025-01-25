@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/gbh007/hgraber-next-agent-example/open_api/agentAPI"
+	"github.com/gbh007/hgraber-next-agent-core/open_api/agentAPI"
 )
 
 func (c *Controller) APICoreStatusGet(ctx context.Context) (agentAPI.APICoreStatusGetRes, error) {

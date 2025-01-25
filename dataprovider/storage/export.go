@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"net/url"
 
-	"github.com/gbh007/hgraber-next-agent-example/entities"
+	"github.com/gbh007/hgraber-next-agent-core/entities"
 	"github.com/google/uuid"
 )
 

@@ -6,9 +6,9 @@ import (
 	"io"
 	"net/url"
 
-	"github.com/gbh007/hgraber-next-agent-example/entities"
-	"github.com/gbh007/hgraber-next-agent-example/open_api/serverAPI"
-	"github.com/gbh007/hgraber-next-agent-example/pkg"
+	"github.com/gbh007/hgraber-next-agent-core/entities"
+	"github.com/gbh007/hgraber-next-agent-core/open_api/serverAPI"
+	"github.com/gbh007/hgraber-next-agent-core/pkg"
 )
 
 func (c *Client) DeduplicateArchive(ctx context.Context, body io.Reader) ([]entities.DeduplicateArchiveResult, error) {

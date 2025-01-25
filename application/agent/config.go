@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/gbh007/hgraber-next-agent-example/config"
+	"github.com/gbh007/hgraber-next-agent-core/config"
 
 	"go.opentelemetry.io/otel/trace"
 )

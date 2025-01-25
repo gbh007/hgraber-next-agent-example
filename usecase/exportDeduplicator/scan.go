@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/gbh007/hgraber-next-agent-example/entities"
+	"github.com/gbh007/hgraber-next-agent-core/entities"
 )
 
 const minEntryPercentage = 0.9999 // Считаем допустимой погрешностью 1 страницу на 10 000.

@@ -7,8 +7,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/gbh007/hgraber-next-agent-example/domain/hgraber"
-	"github.com/gbh007/hgraber-next-agent-example/parser/common"
+	"github.com/gbh007/hgraber-next-agent-core/domain/hgraber"
+	"github.com/gbh007/hgraber-next-agent-core/parser/common"
 )
 
 // Проверка соответствия базового типа

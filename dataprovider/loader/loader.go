@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gbh007/hgraber-next-agent-example/domain/hgraber"
-	"github.com/gbh007/hgraber-next-agent-example/parser/hgraber_local"
-	"github.com/gbh007/hgraber-next-agent-example/parser/mock"
-	"github.com/gbh007/hgraber-next-agent-example/request"
+	"github.com/gbh007/hgraber-next-agent-core/domain/hgraber"
+	"github.com/gbh007/hgraber-next-agent-core/parser/hgraber_local"
+	"github.com/gbh007/hgraber-next-agent-core/parser/mock"
+	"github.com/gbh007/hgraber-next-agent-core/request"
 )
 
 type Loader struct {

@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/gbh007/hgraber-next-agent-example/domain/hgraber"
+	"github.com/gbh007/hgraber-next-agent-core/domain/hgraber"
 )
 
 // Проверка соответствия базового типа

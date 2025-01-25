@@ -5,7 +5,7 @@ import (
 	"io"
 	"log/slog"
 
-	"github.com/gbh007/hgraber-next-agent-example/entities"
+	"github.com/gbh007/hgraber-next-agent-core/entities"
 )
 
 type exportFS interface {

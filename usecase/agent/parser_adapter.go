@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/gbh007/hgraber-next-agent-example/pkg"
+	"github.com/gbh007/hgraber-next-agent-core/pkg"
 
-	"github.com/gbh007/hgraber-next-agent-example/domain/hgraber"
-	"github.com/gbh007/hgraber-next-agent-example/entities"
+	"github.com/gbh007/hgraber-next-agent-core/domain/hgraber"
+	"github.com/gbh007/hgraber-next-agent-core/entities"
 )
 
 // FIXME: переместить в загрузчик и сделать адаптером для легаси парсеров.

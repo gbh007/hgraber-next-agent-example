@@ -8,8 +8,8 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/gbh007/hgraber-next-agent-example/entities"
-	"github.com/gbh007/hgraber-next-agent-example/open_api/agentAPI"
+	"github.com/gbh007/hgraber-next-agent-core/entities"
+	"github.com/gbh007/hgraber-next-agent-core/open_api/agentAPI"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/google/uuid"
