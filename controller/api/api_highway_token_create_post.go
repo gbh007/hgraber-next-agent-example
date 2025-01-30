@@ -6,10 +6,24 @@ import (
 	"github.com/gbh007/hgraber-next-agent-core/open_api/agentAPI"
 )
 
-// FIXME: полноценная реализация
 func (c *Controller) APIHighwayTokenCreatePost(ctx context.Context) (agentAPI.APIHighwayTokenCreatePostRes, error) {
-	return &agentAPI.APIHighwayTokenCreatePostBadRequest{
-		InnerCode: ValidationCode,
-		Details:   agentAPI.NewOptString("unsupported api"),
+	if c.highwayUseCase == nil {
+		return &agentAPI.APIHighwayTokenCreatePostBadRequest{
+			InnerCode: ValidationCode,
+			Details:   agentAPI.NewOptString("unsupported api"),
+		}, nil
+	}
+
+	token, vu, err := c.highwayUseCase.NewToken(ctx)
+	if err != nil {
+		return &agentAPI.APIHighwayTokenCreatePostInternalServerError{
+			InnerCode: HighwayUseCaseCode,
+			Details:   agentAPI.NewOptString(err.Error()),
+		}, nil
+	}
+
+	return &agentAPI.APIHighwayTokenCreatePostOK{
+		ValidUntil: vu,
+		Token:      token,
 	}, nil
 }

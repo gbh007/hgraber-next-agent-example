@@ -15,10 +15,12 @@ import (
 	"github.com/gbh007/hgraber-next-agent-core/dataprovider/masterAPI"
 	"github.com/gbh007/hgraber-next-agent-core/dataprovider/storage"
 	"github.com/gbh007/hgraber-next-agent-core/domain/hgraber"
+	"github.com/gbh007/hgraber-next-agent-core/entities"
 	"github.com/gbh007/hgraber-next-agent-core/pkg"
 	agentUC "github.com/gbh007/hgraber-next-agent-core/usecase/agent"
 	"github.com/gbh007/hgraber-next-agent-core/usecase/exportAPI"
 	"github.com/gbh007/hgraber-next-agent-core/usecase/exportDeduplicator"
+	"github.com/gbh007/hgraber-next-agent-core/usecase/highway"
 	"go.opentelemetry.io/otel"
 )
 
@@ -55,9 +57,10 @@ func Serve[T any](ctx context.Context, parserInit ParserInit[T]) {
 	async := async.New(logger)
 
 	var (
-		exportStorage api.ExportUseCases
-		fileStorage   api.FileUseCases
-		agentUseCases api.ParsingUseCases
+		exportStorage   api.ExportUseCases
+		fileStorage     api.FileUseCases
+		agentUseCases   api.ParsingUseCases
+		highwayUseCases api.HighwayUseCases
 
 		exportStorageRaw *exportFS.Storage
 		dbRaw            *storage.Storage
@@ -174,6 +177,24 @@ func Serve[T any](ctx context.Context, parserInit ParserInit[T]) {
 		logger.DebugContext(ctx, "use export deduplication")
 	}
 
+	if fileStorage != nil && cfg.Highway.PrivateKey != "" && cfg.Highway.TokenLifetime > 0 {
+		tokenizer, err := entities.NewSimpleHighwayTokenizer(cfg.Highway.PrivateKey)
+		if err != nil {
+			logger.ErrorContext(
+				ctx, "fail init highway tokenizer",
+				slog.Any("error", err),
+			)
+
+			os.Exit(1)
+		}
+
+		highwayUseCases = highway.New(
+			tokenizer,
+			cfg.Highway.TokenLifetime,
+			fileStorage,
+		)
+	}
+
 	parserNames := pkg.Map(parsers, func(parser hgraber.Parser) string {
 		return parser.Name()
 	})
@@ -185,6 +206,7 @@ func Serve[T any](ctx context.Context, parserInit ParserInit[T]) {
 		agentUseCases,
 		exportStorage,
 		fileStorage,
+		highwayUseCases,
 		cfg.API.Addr,
 		cfg.Application.Debug,
 		cfg.API.Token,

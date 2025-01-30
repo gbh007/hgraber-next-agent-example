@@ -34,6 +34,12 @@ type FileUseCases interface {
 	IDs(ctx context.Context) ([]uuid.UUID, error)
 }
 
+type HighwayUseCases interface {
+	NewToken(ctx context.Context) (string, time.Time, error)
+	ValidateToken(ctx context.Context, token string) error
+	Get(ctx context.Context, fileID uuid.UUID) (io.Reader, error)
+}
+
 type Controller struct {
 	startAt time.Time
 	logger  *slog.Logger
@@ -46,6 +52,7 @@ type Controller struct {
 	exportUseCase   ExportUseCases
 	fileUseCase     FileUseCases
 	parsingUseCases ParsingUseCases
+	highwayUseCase  HighwayUseCases
 
 	token          string
 	parserCodes    []string
@@ -59,6 +66,7 @@ func New(
 	parsingUseCases ParsingUseCases,
 	exportUseCase ExportUseCases,
 	fileUseCase FileUseCases,
+	highwayUseCase HighwayUseCases,
 	addr string,
 	debug bool,
 	token string,
@@ -78,6 +86,7 @@ func New(
 		parsingUseCases: parsingUseCases,
 		exportUseCase:   exportUseCase,
 		fileUseCase:     fileUseCase,
+		highwayUseCase:  highwayUseCase,
 	}
 
 	if c.parsingUseCases != nil {
@@ -90,6 +99,10 @@ func New(
 
 	if c.fileUseCase != nil {
 		c.enabledModules = append(c.enabledModules, "file system")
+	}
+
+	if c.highwayUseCase != nil {
+		c.enabledModules = append(c.enabledModules, "highway")
 	}
 
 	ogenServer, err := agentAPI.NewServer(c, c)
