@@ -3,7 +3,9 @@ package api
 import (
 	"context"
 
+	"github.com/gbh007/hgraber-next-agent-core/entities"
 	"github.com/gbh007/hgraber-next-agent-core/open_api/agentAPI"
+	"github.com/gbh007/hgraber-next-agent-core/pkg"
 )
 
 func (c *Controller) APIFsInfoPost(ctx context.Context, req *agentAPI.APIFsInfoPostReq) (agentAPI.APIFsInfoPostRes, error) {
@@ -14,7 +16,7 @@ func (c *Controller) APIFsInfoPost(ctx context.Context, req *agentAPI.APIFsInfoP
 		}, nil
 	}
 
-	ids, err := c.fileUseCase.IDs(ctx)
+	state, err := c.fileUseCase.State(ctx, req.IncludeFileIds.Value, req.IncludeFileSizes.Value)
 	if err != nil {
 		return &agentAPI.APIFsInfoPostInternalServerError{
 			InnerCode: FileUseCaseCode,
@@ -22,10 +24,26 @@ func (c *Controller) APIFsInfoPost(ctx context.Context, req *agentAPI.APIFsInfoP
 		}, nil
 	}
 
-	// FIXME: полноценная реализация
-
 	return &agentAPI.APIFsInfoPostOK{
-		FileIds:        ids,
-		TotalFileCount: agentAPI.NewOptInt64(int64(len(ids))),
+		FileIds: state.FileIDs,
+		TotalFileCount: agentAPI.OptInt64{
+			Value: state.TotalFileCount,
+			Set:   state.TotalFileCount > 0,
+		},
+		TotalFileSize: agentAPI.OptInt64{
+			Value: state.TotalFileSize,
+			Set:   state.TotalFileSize > 0,
+		},
+		AvailableSize: agentAPI.OptInt64{
+			Value: state.AvailableSize,
+			Set:   state.AvailableSize > 0,
+		},
+		Files: pkg.Map(state.Files, func(raw entities.FSStateFile) agentAPI.APIFsInfoPostOKFilesItem {
+			return agentAPI.APIFsInfoPostOKFilesItem{
+				ID:        raw.ID,
+				Size:      raw.Size,
+				CreatedAt: raw.CreatedAt,
+			}
+		}),
 	}, nil
 }

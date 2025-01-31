@@ -31,7 +31,7 @@ type FileUseCases interface {
 	Create(ctx context.Context, fileID uuid.UUID, body io.Reader) error
 	Delete(ctx context.Context, fileID uuid.UUID) error
 	Get(ctx context.Context, fileID uuid.UUID) (io.Reader, error)
-	IDs(ctx context.Context) ([]uuid.UUID, error)
+	State(ctx context.Context, includeFileIDs, includeFileSizes bool) (entities.FSState, error)
 }
 
 type HighwayUseCases interface {
