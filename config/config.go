@@ -9,6 +9,7 @@ type Config[T any] struct {
 	FSBase      FSBase      `envconfig:"FS_BASE" yaml:"fs_base"`
 	Sqlite      Sqlite      `envconfig:"SQLITE" yaml:"sqlite"`
 	ZipScanner  ZipScanner  `envconfig:"ZIP_SCANNER" yaml:"zip_scanner"`
+	Highway     Highway     `envconfig:"HIGHWAY" yaml:"highway"`
 }
 
 func DefaultConfig[T any](defaultParsers func() *T) Config[T] {
@@ -18,6 +19,7 @@ func DefaultConfig[T any](defaultParsers func() *T) Config[T] {
 		Application: DefaultApplication(),
 		FSBase:      DefaultFSBase(),
 		Sqlite:      DefaultSqlite(),
+		Highway:     DefaultHighway(),
 	}
 }
 
@@ -91,4 +93,13 @@ type ZipScanner struct {
 
 func DefaultZipScanner() ZipScanner {
 	return ZipScanner{}
+}
+
+type Highway struct {
+	PrivateKey    string        `envconfig:"PRIVATE_KEY" yaml:"private_key"`
+	TokenLifetime time.Duration `envconfig:"TOKEN_LIFETIME" yaml:"token_lifetime"`
+}
+
+func DefaultHighway() Highway {
+	return Highway{}
 }

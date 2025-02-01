@@ -22,3 +22,6 @@ sqlite:
 zip_scanner:
   master_addr: http://localhost:8080
   master_token: local-next
+highway:
+  private_key: "local-highway"
+  token_lifetime: 1h
